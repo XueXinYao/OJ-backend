@@ -10,8 +10,10 @@ import com.yupi.yuoj.exception.BusinessException;
 import com.yupi.yuoj.model.dto.question.QuestionQueryRequest;
 import com.yupi.yuoj.model.dto.questionsubmit.QuestionSubmitAddRequest;
 import com.yupi.yuoj.model.dto.questionsubmit.QuestionSubmitQueryRequest;
+import com.yupi.yuoj.model.entity.Question;
 import com.yupi.yuoj.model.entity.QuestionSubmit;
 import com.yupi.yuoj.model.entity.User;
+import com.yupi.yuoj.model.vo.QuestionSubmitVO;
 import com.yupi.yuoj.service.QuestionSubmitService;
 import com.yupi.yuoj.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -66,9 +68,16 @@ public class QuestionSubmitController {
      * */
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> listQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest,
-                                                          HttpServletRequest request) {
-        return null;
+    public BaseResponse<Page<QuestionSubmitVO>> listQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest,
+                                                                         HttpServletRequest request) {
+        long current = questionSubmitQueryRequest.getCurrent();
+        long size = questionSubmitQueryRequest.getPageSize();
+        //从数据库中查询原始的题目信息
+        Page<QuestionSubmit> questionSubmitPage = quesitonSubmitService.page(new Page<>(current, size),
+                quesitonSubmitService.getQueryWrapper(questionSubmitQueryRequest));
+        final User loginUser = userService.getLoginUser(request);
+        //脱敏
+        return ResultUtils.success(quesitonSubmitService.getQuestionSubmitVOPage(questionSubmitPage, loginUser));
 
  }
 }

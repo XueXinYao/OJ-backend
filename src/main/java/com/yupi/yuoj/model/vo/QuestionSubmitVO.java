@@ -1,14 +1,13 @@
 package com.yupi.yuoj.model.vo;
 
 import cn.hutool.json.JSONUtil;
-import com.yupi.yuoj.model.dto.question.JudgeConfig;
-import com.yupi.yuoj.model.entity.Question;
+import com.yupi.yuoj.model.dto.questionsubmit.JudgeInfo;
+import com.yupi.yuoj.model.entity.QuestionSubmit;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
-
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
+
 
 /**
  * 题目提交封装类
@@ -18,50 +17,36 @@ import java.util.List;
 @Data
 public class QuestionSubmitVO implements Serializable {
 
-    private  Long id;
     /**
-     * 标题
+     * id
      */
-    private String title;
 
-    /**
-     * 内容
-     */
-    private String content;
+    private Long id;
 
     /**
-     * 标签列表（json 数组）
+     * 编程语言
      */
-    private List<String> tags;
-
-
+    private String language;
 
     /**
-     * 提交数
+     * 编程代码
      */
-    private Integer submitNum;
+    private String code;
 
     /**
-     * 通过数
+     * 判题信息（json 对象）
      */
-    private Integer acceptNum;
-
-
+    private JudgeInfo judgeInfo;
 
     /**
-     * 判题配置（json 对象）
+     * 提交状态：0-待判题 1-判题中 2-判题成功 3-判题失败
      */
-    private JudgeConfig judgeConfig;
+    private Integer status;
 
     /**
-     * 点赞数
+     * 题目 id
      */
-    private Integer thumbNum;
-
-    /**
-     * 收藏数
-     */
-    private Integer favourNum;
+    private Long questionId;
 
     /**
      * 创建用户 id
@@ -77,53 +62,53 @@ public class QuestionSubmitVO implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * 提交用户信息
+     * */
+    private UserVO userVO;
 
     /**
-     * 创建题目人的信息
+     * 对应题目信息
      * */
-    private UserVO  userVO;
+    private QuestionVO questionVO;
 
-
-    private static final long serialVersionUID = 1L;
     /**
      * 包装类转对象
      *
-     * @param questionVO
+     * @param questionSubmitVO
      * @return
      */
-    public static Question voToObj(QuestionSubmitVO questionVO) {
-        if (questionVO == null) {
+    public static QuestionSubmit voToObj(QuestionSubmitVO questionSubmitVO) {
+        if (questionSubmitVO == null) {
             return null;
         }
-        Question question = new Question();
-        BeanUtils.copyProperties(questionVO, question);
-        List<String> tagList = questionVO.getTags();
-        if (tagList != null){
-            question.setTags(JSONUtil.toJsonStr(tagList));
+        QuestionSubmit questionSubmit = new QuestionSubmit();
+
+        BeanUtils.copyProperties(questionSubmitVO, questionSubmit);
+        JudgeInfo judgeInfoObj = questionSubmitVO.getJudgeInfo();
+
+        if (judgeInfoObj!= null){
+            questionSubmit.setJudgeInfo(JSONUtil.toJsonStr(judgeInfoObj));
         }
-        JudgeConfig voJudgeConfig = questionVO.getJudgeConfig();
-        if (voJudgeConfig != null){
-            question.setJudgeConfig(JSONUtil.toJsonStr(voJudgeConfig));
-        }
-        return question;
+
+        return questionSubmit;
     }
 
     /**
      * 对象转包装类
      *
-     * @param question
+     * @param questionSubmit
      * @return
      */
-    public static QuestionSubmitVO objToVo(Question question) {
-        if (question == null) {
+    public static QuestionSubmitVO objToVo(QuestionSubmit questionSubmit) {
+        if (questionSubmit == null) {
             return null;
         }
-        QuestionSubmitVO questionVO = new QuestionSubmitVO();
-        BeanUtils.copyProperties(question, questionVO);
-        List<String> tagList = JSONUtil.toList(question.getTags(), String.class);
-        questionVO.setTags(tagList);
-        JudgeConfig judgeConfig = JSONUtil.toBean(question.getJudgeConfig(), JudgeConfig.class);
-        questionVO.setJudgeConfig(judgeConfig);
-        return questionVO;
+        QuestionSubmitVO questionSubmitVO = new QuestionSubmitVO();
+        BeanUtils.copyProperties(questionSubmit, questionSubmitVO);
+        String judgeInfoStr = questionSubmit.getJudgeInfo();
+        questionSubmitVO.setJudgeInfo(JSONUtil.toBean(judgeInfoStr, JudgeInfo.class));
+        return questionSubmitVO;
     }
+    private static final long serialVersionUID = 1L;
 }

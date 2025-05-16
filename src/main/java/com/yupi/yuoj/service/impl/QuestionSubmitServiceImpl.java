@@ -23,6 +23,7 @@ import com.yupi.yuoj.service.QuestionService;
 import com.yupi.yuoj.service.QuestionSubmitService;
 import com.yupi.yuoj.service.QuestionSubmitService;
 import com.yupi.yuoj.mapper.QuestionSubmitMapper;
+import com.yupi.yuoj.service.UserService;
 import com.yupi.yuoj.utils.SqlUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +48,8 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
     implements QuestionSubmitService{
     @Resource
     private QuestionService questionService;
+    @Resource
+    private UserService userService;
 
     /** 
      * 提交题目
@@ -98,27 +101,18 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         if (questionSubmitQueryRequest == null) {
             return queryWrapper;
         }
-        Long id = questionSubmitQueryRequest.getId();
-        String title = questionSubmitQueryRequest.getTitle();
-        String content = questionSubmitQueryRequest.getContent();
-        List<String> tags = questionSubmitQueryRequest.getTags();
-        String answer = questionSubmitQueryRequest.getAnswer();
+        String language = questionSubmitQueryRequest.getLanguage();
+        Integer status = questionSubmitQueryRequest.getStatus();
+        Long questionId = questionSubmitQueryRequest.getQuestionId();
         Long userId = questionSubmitQueryRequest.getUserId();
-
         String sortField = questionSubmitQueryRequest.getSortField();
         String sortOrder = questionSubmitQueryRequest.getSortOrder();
 
-        queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
-        queryWrapper.like(StringUtils.isNotBlank(content), "content", content);
-        queryWrapper.like(StringUtils.isNotBlank(content), "answer", answer);
-        if (CollUtil.isNotEmpty(tags)) {
-            for (String tag : tags) {
-                queryWrapper.like("tags", "\"" + tag + "\"");
-            }
-        }
 
-        queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
+        queryWrapper.eq(StringUtils.isNotBlank(language), "language", language );
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(questionId), "questionId", questionId);
+        queryWrapper.eq(QuestionSubmitStatusEnum.getEnumByValue(String.valueOf(status))!= null, "status", status);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
@@ -126,44 +120,27 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 
 
     @Override
-    public QuestionSubmitVO getQuestionSubmitVO(QuestionSubmit questionSubmit, HttpServletRequest request) {
+    public QuestionSubmitVO getQuestionSubmitVO(QuestionSubmit questionSubmit, User loginUser) {
         QuestionSubmitVO questionSubmitVO = QuestionSubmitVO.objToVo(questionSubmit);
-        long questionSubmitId = questionSubmit.getId();
-        // 1. 关联查询用户信息
-        Long userId = questionSubmit.getUserId();
-        User user = null;
-        if (userId != null && userId > 0) {
-            user = userService.getById(userId);
-        }
-        UserVO userVO = userService.getUserVO(user);
-        questionSubmitVO.setUserVO(userVO);
+        //脱敏 仅本人和管理员能看见自己（提交userId和登录用户id不同）提交代码的答案，提交代码
 
+        long userId = questionSubmit.getUserId();
+        //处理脱敏
+        if (userId!=questionSubmit.getUserId() && !userService.isAdmin(loginUser)){
+            questionSubmitVO.setCode("");
+         }
         return questionSubmitVO;
     }
 
     @Override
-    public Page<QuestionSubmitVO> getQuestionSubmitVOPage(Page<QuestionSubmit> questionSubmitPage, HttpServletRequest request) {
+    public Page<QuestionSubmitVO> getQuestionSubmitVOPage(Page<QuestionSubmit> questionSubmitPage,  User loginUser) {
         List<QuestionSubmit> questionSubmitList = questionSubmitPage.getRecords();
         Page<QuestionSubmitVO> questionSubmitVOPage = new Page<>(questionSubmitPage.getCurrent(), questionSubmitPage.getSize(), questionSubmitPage.getTotal());
         if (CollUtil.isEmpty(questionSubmitList)) {
             return questionSubmitVOPage;
         }
-        // 1. 关联查询用户信息
-        Set<Long> userIdSet = questionSubmitList.stream().map(QuestionSubmit::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
-                .collect(Collectors.groupingBy(User::getId));
+        List<QuestionSubmitVO> questionSubmitVOList = questionSubmitList.stream().map(questionSubmit -> getQuestionSubmitVO(questionSubmit, loginUser)).collect(Collectors.toList());
 
-        // 填充信息
-        List<QuestionSubmitVO> questionSubmitVOList = questionSubmitList.stream().map(questionSubmit -> {
-            QuestionSubmitVO questionSubmitVO = QuestionSubmitVO.objToVo(questionSubmit);
-            Long userId = questionSubmit.getUserId();
-            User user = null;
-            if (userIdUserListMap.containsKey(userId)) {
-                user = userIdUserListMap.get(userId).get(0);
-            }
-            questionSubmitVO.setUserVO(userService.getUserVO(user));
-            return questionSubmitVO;
-        }).collect(Collectors.toList());
         questionSubmitVOPage.setRecords(questionSubmitVOList);
         return questionSubmitVOPage;
     }
