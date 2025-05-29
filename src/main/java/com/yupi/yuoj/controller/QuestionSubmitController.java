@@ -55,7 +55,7 @@ public class QuestionSubmitController {
         if (quesitonSubmitAddRequest == null || quesitonSubmitAddRequest.getQuestionId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // 登录才能点赞
+
         final User loginUser = userService.getLoginUser(request);
 
         Long questionSubmitId = quesitonSubmitService.doQuestionSubmit(quesitonSubmitAddRequest, loginUser);
