@@ -100,7 +100,6 @@ public class JudgeServiceImpl implements JudgeService {
         //根据沙箱的执行结果 设置题目状态
         List<String> outputList = executeCodeResponse.getOutput();
 
-
         JudgeContext  judgeContext =  new JudgeContext();
         judgeContext.setJudgeInfo(executeCodeResponse.getJudgeInfo());
         judgeContext.setInputList(inputList);
@@ -116,8 +115,9 @@ public class JudgeServiceImpl implements JudgeService {
         //修改数据库中的结果
         quetionSubmitUpdate = new QuestionSubmit();
         quetionSubmitUpdate.setId(questionSubmitId);
-        quetionSubmitUpdate.setStatus(QuestionSubmitStatusEnum.SUCCESS.getValue());
         quetionSubmitUpdate.setJudgeInfo(JSONUtil.toJsonStr(judgeInfo));
+        quetionSubmitUpdate.setStatus(QuestionSubmitStatusEnum.SUCCESS.getValue());
+        System.out.println(quetionSubmitUpdate);
         update = questionSubmitService.updateById(quetionSubmitUpdate);
         if (!update){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "题目更新错误");

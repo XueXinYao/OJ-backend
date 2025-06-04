@@ -38,7 +38,8 @@ public class JavaLanguageJudgeStrategy implements JudgeStrategy{
         //依次判断每一项输出和预期输出是否相等
         for (int i = 0; i < judgeCaseList.size(); i++){   //judgeCase就是题目的输入输出用例，outputList是沙箱的运行结果
             JudgeCase judgeCase = judgeCaseList.get(i);
-            if(!judgeCase.getOutput().equals(outputList.get(i))){
+            String cleanedOutput = outputList.get(i).replaceAll("[\\r\\n]+", "");
+            if (!judgeCase.getOutput().equals(cleanedOutput)) {
                 judgeInfoMessageEnum = JudgeInfoMessageEnum.Wrong_Answer;
                 judgeInfoRes.setMessage(judgeInfoMessageEnum.getValue());
                 return judgeInfoRes;

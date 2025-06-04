@@ -11,11 +11,16 @@ import com.yupi.yuoj.constant.UserConstant;
 import com.yupi.yuoj.exception.BusinessException;
 import com.yupi.yuoj.exception.ThrowUtils;
 import com.yupi.yuoj.model.dto.question.*;
+import com.yupi.yuoj.model.dto.questionsubmit.QuestionSubmitAddRequest;
+import com.yupi.yuoj.model.dto.questionsubmit.QuestionSubmitQueryRequest;
 import com.yupi.yuoj.model.dto.user.UserQueryRequest;
 import com.yupi.yuoj.model.entity.Question;
+import com.yupi.yuoj.model.entity.QuestionSubmit;
 import com.yupi.yuoj.model.entity.User;
+import com.yupi.yuoj.model.vo.QuestionSubmitVO;
 import com.yupi.yuoj.model.vo.QuestionVO;
 import com.yupi.yuoj.service.QuestionService;
+import com.yupi.yuoj.service.QuestionSubmitService;
 import com.yupi.yuoj.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -41,6 +46,9 @@ public class QuestionController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private QuestionSubmitService quesitonSubmitService;
 
     // region 增删改查
 
@@ -288,4 +296,46 @@ public class QuestionController {
         return ResultUtils.success(result);
     }
 
+
+
+
+
+    /**
+     * 提交题目
+     *
+     * @param quesitonSubmitAddRequest
+     * @param request
+     * @return 提交记录id
+     */
+    @PostMapping("/question_submit/do")
+    public BaseResponse<Long> doQuestionSubmit(@RequestBody QuestionSubmitAddRequest quesitonSubmitAddRequest,
+                                               HttpServletRequest request) {
+        if (quesitonSubmitAddRequest == null || quesitonSubmitAddRequest.getQuestionId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        final User loginUser = userService.getLoginUser(request);
+
+        Long questionSubmitId = quesitonSubmitService.doQuestionSubmit(quesitonSubmitAddRequest, loginUser);
+        return ResultUtils.success(questionSubmitId);
+    }
+
+    /**
+     * 分页获取题目提交列表（除了管理员外，普通用户只能看到答案，提交代码等公开信息）
+     *
+     * */
+    @PostMapping("/question_submit/list/page")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<QuestionSubmitVO>> listQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest,
+                                                                         HttpServletRequest request) {
+        long current = questionSubmitQueryRequest.getCurrent();
+        long size = questionSubmitQueryRequest.getPageSize();
+        //从数据库中查询原始的题目信息
+        Page<QuestionSubmit> questionSubmitPage = quesitonSubmitService.page(new Page<>(current, size),
+                quesitonSubmitService.getQueryWrapper(questionSubmitQueryRequest));
+        final User loginUser = userService.getLoginUser(request);
+        //脱敏
+        return ResultUtils.success(quesitonSubmitService.getQuestionSubmitVOPage(questionSubmitPage, loginUser));
+
+    }
 }

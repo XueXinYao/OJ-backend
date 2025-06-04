@@ -76,7 +76,7 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        System.out.println(2);
+
 
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
 
